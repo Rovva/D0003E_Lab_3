@@ -4,8 +4,7 @@
 #include <avr/interrupt.h>
 
 #include "tinythreads.h"
-
-mutex primesMutex, blinkMutex, buttonMutex;
+mutex primesMutex = {1,0}, blinkMutex = {1,0}, buttonMutex = {1,0};
 
 void init_lcd() {
 	// LCD Enable (LCDEN) & Low Power Waveform (LCDAB)
@@ -138,8 +137,8 @@ void printAt(long num, int pos) {
 void computePrimes(int pos) {
 	long n;
 
-	//for(n = 1; ; n++) {
-	lock(&primesMutex);
+	for(n = 1; ; n++) {
+		lock(&primesMutex);
 		if (is_prime(n)) {
 			// Lock the mutex
 			//lock(&mutexlock);
@@ -147,8 +146,8 @@ void computePrimes(int pos) {
 			//yield();
 			//unlock(&mutexlock);
 		}
-	unlock(&primesMutex);
-	//}
+		//unlock(&primesMutex);
+	}
 }
 
 void blink() {
@@ -158,12 +157,13 @@ void blink() {
 		1000 / 50 = 20;
 	*/
 
-	lock(&blinkMutex);
-		if(readMilliseconds() >= 20) {
+	for(;;) {
+		lock(&blinkMutex);
+		//if(readMilliseconds() >= 20) {
 			LCDDR3 = LCDDR3 ^ 0b00000001;
 			resetMilliseconds();
-		}
-	unlock(&blinkMutex);
+		//}
+	}
 }
 
 void init_button() {
@@ -173,18 +173,21 @@ void init_button() {
 void button() {
 	bool latch = false;
 	uint8_t buttonNow = 0, buttonPrev = 0;
-
-	lock(&buttonMutex);
+	
+	for(;;) {
+		
 		// Read value of PINB7
-		buttonNow = (PINB >> 7);
+		//buttonNow = (PINB >> 7);
 		// If the button state is 0 and the previous state was 1 then change latch state to true
-		if(buttonNow == 0 && buttonPrev == 1) {
+		//if(buttonNow == 0 && buttonPrev == 1) {
+		lock(&buttonMutex);
+		
 			if(latch == true) {
 				latch = false;
 				} else {
 				latch = true;
 			}
-		}
+		//}
 
 		// Store the new value of buttonNow in buttonPrev
 		buttonPrev = buttonNow;
@@ -201,20 +204,19 @@ void button() {
 
 			//LCDDR1 = LCDDR1 ^ 0b000000010;
 			//LCDDR0 = LCDDR0 | 0b000000100;
-		}
-	unlock(&buttonMutex);
+	}
+	}
 }
 
 // Yield when timer interrupts
 ISR(TIMER1_COMPA_vect) {
 	unlock(&blinkMutex);
+	yield();
 }
 
 ISR(PCINT1_vect) {
-	// Check the current value of pin 7 and if active, make a yield
-	if((PINB >> 7) == 0) {
 		unlock(&buttonMutex);
-	}
+	yield();
 }
 
 int main()
@@ -222,13 +224,6 @@ int main()
 	init_lcd();
 	init_button();
 	
-
-	// Start with all the mutexes locked
-	primesMutex.locked = 1;
-	blinkMutex.locked = 1;
-	buttonMutex.locked = 1;
-
-
 	spawn(button, 0);
 	spawn(blink, 0);
 	computePrimes(0);

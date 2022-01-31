@@ -11,6 +11,7 @@
 #define SETSTACK(buf,a) *((unsigned int *)(buf)+8) = (unsigned int)(a) + STACKSIZE - 4; \
                         *((unsigned int *)(buf)+9) = (unsigned int)(a) + STACKSIZE - 4
 
+
 struct thread_block {
     void (*function)(int);   // code to run
     int arg;                 // argument to the above
@@ -77,8 +78,6 @@ static void enqueue(thread p, thread *queue) {
 		p->next = *queue;
 		*queue = p;
     }
-	// Do something smart with the queue so newly created threads start first
-
 }
 
 static thread dequeue(thread *queue) {
@@ -124,10 +123,8 @@ void spawn(void (* function)(int), int arg) {
 
 void yield(void) {
 	// Put the current thread into the readyQ
-	thread temp = dequeue(&readyQ);
 	enqueue(current, &readyQ);
 	// Start another thread from readyQ
-	enqueue(temp, &readyQ);
 	dispatch(dequeue(&readyQ));
 }
 

@@ -169,35 +169,18 @@ void init_button() {
 void button() {
 	bool latch = false;
 	uint8_t buttonNow = 0, buttonPrev = 0;
+	uint16_t clicks = 0;
 
 	for(;;) {
 		// Read value of PINB7
 		buttonNow = (PINB >> 7);
 		// If the button state is 0 and the previous state was 1 then change latch state to true
 		if(buttonNow == 0 && buttonPrev == 1) {
-			if(latch == true) {
-				latch = false;
-				} else {
-				latch = true;
-			}
+			clicks++;
 		}
-
-		// Store the new value of buttonNow in buttonPrev
 		buttonPrev = buttonNow;
-		if(latch == true) {
-			LCDDR1 = LCDDR1 ^ 0b00000010;			
-
-			LCDDR0 = 0b11111011 & LCDDR0;
-			//LCDDR1 = LCDDR1 | 0b000000010;
-			//LCDDR0 = LCDDR0 ^ 0b000000100;
-		} else {
-			LCDDR1 = 0b11111101 & LCDDR1;
-
-			LCDDR0 = LCDDR0 ^ 0b00000100;
-
-			//LCDDR1 = LCDDR1 ^ 0b000000010;
-			//LCDDR0 = LCDDR0 | 0b000000100;
-		}
+		
+		printAt(clicks, 3);
 	}
 }
 

@@ -119,14 +119,17 @@ void spawn(void (* function)(int), int arg) {
 }
 
 void yield(void) {
+	DISABLE();
 	milliseconds += 1;
 	// Put the current thread into the readyQ
 	enqueue(current, &readyQ);
 	// Start another thread from readyQ
 	dispatch(dequeue(&readyQ));
+	ENABLE();
 }
 
 void lock(mutex *m) {
+	DISABLE();
 	// If the mutex is not locked, then lock it
 	if(m->locked == 0) {
 		m->locked = 1;
@@ -135,9 +138,11 @@ void lock(mutex *m) {
 		enqueue(current, &m->waitQ);
 		dispatch(dequeue(&readyQ));
 	}
+	ENABLE();
 }
 
 void unlock(mutex *m) {
+	DISABLE();
 	// If there is a thread waiting in waitQ in the mutex, enqueue the current thread and start 
 	// the thread in waitQ that is stored in mutex
 	if(m->waitQ) {
@@ -147,6 +152,7 @@ void unlock(mutex *m) {
 	} else {
 		m->locked = 0;
 	}
+	ENABLE();
 }
 
 void resetMilliseconds() {
