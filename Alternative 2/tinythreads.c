@@ -39,11 +39,11 @@ static void initialize(void) {
 
 	//PORTB = (1<<PB7);
 	// Pin Change Enable Mask (PCINT15)
-	//PCMSK1 = (1<<PCINT15);
+	PCMSK1 = (1<<PCINT15);
 	// External Interrupt Mask Register (EIMSK)
-	//EIMSK = (1<<PCIE1);
+	EIMSK = (1<<PCIE1);
 	// Timer 1 with 1024 prescaler with CTC (WGM13, WGM12)
-	//TCCR1B = (0<<WGM13) | (1<<WGM12) | (1<<CS12) | (0<<CS11) | (1<<CS10);
+	TCCR1B = (0<<WGM13) | (1<<WGM12) | (1<<CS12) | (0<<CS11) | (1<<CS10);
 
 	/* 8 Mhz = 8 000 000
 	 * 8 000 000 / 1024 = 7812,5
@@ -53,14 +53,14 @@ static void initialize(void) {
 	 * 391 = 0b110000111
 	 */
 	// Set Timer1 Output Compare A
-	//TIMSK1 = (1<<OCIE1A);
+	TIMSK1 = (1<<OCIE1A);
 	// Set Output Compare Register 1 A to 391 in binary
 	//OCR1A = 0b110000111;
 	//OCR1A = 391; // Decimals works too!
 	//OCR1A = 7812;
-	
+	OCR1A = 3906;
 	// Start the timer on value 0
-	//TCNT1 = 0;
+	TCNT1 = 0;
 
     initialized = 1;
 }
@@ -68,14 +68,15 @@ static void initialize(void) {
 static void enqueue(thread p, thread *queue) {
     p->next = NULL;
     if (*queue == NULL) {
-        *queue = p;
-    } else {
-        thread q = *queue;
-        while (q->next)
-            q = q->next;
-        q->next = p;
+	    *queue = p;
+	} else {
+	    //thread q = *queue;
+	    //while (q->next)
+	    //q = q->next;
+	    //q->next = p;
+		p->next = *queue;
+		*queue = p;
     }
-
 	// Do something smart with the queue so newly created threads start first
 
 }
@@ -109,11 +110,11 @@ void spawn(void (* function)(int), int arg) {
     newp->arg = arg;
     newp->next = NULL;
     if (setjmp(newp->context) == 1) {
-        ENABLE();
-        current->function(current->arg);
-        DISABLE();
-        enqueue(current, &freeQ);
-        dispatch(dequeue(&readyQ));
+	    ENABLE();
+	    current->function(current->arg);
+	    DISABLE();
+	    enqueue(current, &freeQ);
+	    dispatch(dequeue(&readyQ));
     }
     SETSTACK(&newp->context, &newp->stack);
 
@@ -122,10 +123,11 @@ void spawn(void (* function)(int), int arg) {
 }
 
 void yield(void) {
-	milliseconds += 1;
 	// Put the current thread into the readyQ
+	thread temp = dequeue(&readyQ);
 	enqueue(current, &readyQ);
 	// Start another thread from readyQ
+	enqueue(temp, &readyQ);
 	dispatch(dequeue(&readyQ));
 }
 
@@ -159,3 +161,4 @@ void resetMilliseconds() {
 int readMilliseconds() {
 	return milliseconds;
 }
+

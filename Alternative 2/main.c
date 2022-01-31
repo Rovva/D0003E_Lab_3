@@ -6,10 +6,6 @@
 #include "tinythreads.h"
 
 mutex primesMutex, blinkMutex, buttonMutex;
-// Start with all the mutexes locked
-primesMutex.locked = 1;
-blinkMutex.locked = 1;
-buttonMutex.locked = 1;
 
 void init_lcd() {
 	// LCD Enable (LCDEN) & Low Power Waveform (LCDAB)
@@ -210,15 +206,29 @@ void button() {
 }
 
 // Yield when timer interrupts
-//ISR(TIMER1_COMPA_vect) {
-//	yield();
-//}
+ISR(TIMER1_COMPA_vect) {
+	unlock(&blinkMutex);
+}
+
+ISR(PCINT1_vect) {
+	// Check the current value of pin 7 and if active, make a yield
+	if((PINB >> 7) == 0) {
+		unlock(&buttonMutex);
+	}
+}
 
 int main()
 {
 	init_lcd();
 	init_button();
 	
+
+	// Start with all the mutexes locked
+	primesMutex.locked = 1;
+	blinkMutex.locked = 1;
+	buttonMutex.locked = 1;
+
+
 	spawn(button, 0);
 	spawn(blink, 0);
 	computePrimes(0);
