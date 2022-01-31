@@ -5,8 +5,6 @@
 
 #include "tinythreads.h"
 
-mutex mutexlock;
-
 void init_lcd() {
 	// LCD Enable (LCDEN) & Low Power Waveform (LCDAB)
 	LCDCRA = (1<<LCDEN) | (1<<LCDAB) | (0<<LCDIF) | (0<<LCDIE) | (0<<LCDBL);

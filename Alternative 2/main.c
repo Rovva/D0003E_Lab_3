@@ -5,7 +5,11 @@
 
 #include "tinythreads.h"
 
-mutex mutexlock;
+mutex primesMutex, blinkMutex, buttonMutex;
+// Start with all the mutexes locked
+primesMutex.locked = 1;
+blinkMutex.locked = 1;
+buttonMutex.locked = 1;
 
 void init_lcd() {
 	// LCD Enable (LCDEN) & Low Power Waveform (LCDAB)
@@ -138,7 +142,8 @@ void printAt(long num, int pos) {
 void computePrimes(int pos) {
 	long n;
 
-	for(n = 1; ; n++) {
+	//for(n = 1; ; n++) {
+	lock(&primesMutex);
 		if (is_prime(n)) {
 			// Lock the mutex
 			//lock(&mutexlock);
@@ -146,7 +151,8 @@ void computePrimes(int pos) {
 			//yield();
 			//unlock(&mutexlock);
 		}
-	}
+	unlock(&primesMutex);
+	//}
 }
 
 void blink() {
@@ -156,12 +162,12 @@ void blink() {
 		1000 / 50 = 20;
 	*/
 
-	for(;;) {
+	lock(&blinkMutex);
 		if(readMilliseconds() >= 20) {
 			LCDDR3 = LCDDR3 ^ 0b00000001;
 			resetMilliseconds();
 		}
-	}
+	unlock(&blinkMutex);
 }
 
 void init_button() {
@@ -172,7 +178,7 @@ void button() {
 	bool latch = false;
 	uint8_t buttonNow = 0, buttonPrev = 0;
 
-	for(;;) {
+	lock(&buttonMutex);
 		// Read value of PINB7
 		buttonNow = (PINB >> 7);
 		// If the button state is 0 and the previous state was 1 then change latch state to true
@@ -200,22 +206,22 @@ void button() {
 			//LCDDR1 = LCDDR1 ^ 0b000000010;
 			//LCDDR0 = LCDDR0 | 0b000000100;
 		}
-	}
+	unlock(&buttonMutex);
 }
 
 // Yield when timer interrupts
-ISR(TIMER1_COMPA_vect) {
-	yield();
-}
+//ISR(TIMER1_COMPA_vect) {
+//	yield();
+//}
 
 int main()
 {
 	init_lcd();
 	init_button();
 	
-	spawn(computePrimes, 0);
+	spawn(button, 0);
 	spawn(blink, 0);
-	button();
+	computePrimes(0);
 	
 }
 
