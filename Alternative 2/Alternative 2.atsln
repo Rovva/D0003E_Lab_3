@@ -3,9 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Atmel Studio Solution File, Format Version 11.00
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Alternative 1", "Alternative 1.cproj", "{DCE6C7E3-EE26-4D79-826B-08594B9AD897}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D2300552-E618-4B62-B994-8DF0122F280C}"
+Project("{54F91283-7BC4-4236-8FF9-10F437C3AD48}") = "Alternative 2", "Alternative 2.cproj", "{DCE6C7E3-EE26-4D79-826B-08594B9AD897}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
