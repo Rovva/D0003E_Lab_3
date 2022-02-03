@@ -138,11 +138,7 @@ void computePrimes(int pos) {
 
 	for(n = 1; ; n++) {
 		if (is_prime(n)) {
-			// Lock the mutex
-			//lock(&mutexlock);
 			printAt(n, pos);
-			//yield();
-			//unlock(&mutexlock);
 		}
 	}
 }
@@ -167,14 +163,12 @@ void init_button() {
 }
 
 void button() {
-	bool latch = false;
 	uint8_t buttonNow = 0, buttonPrev = 0;
 	uint16_t clicks = 0;
 
 	for(;;) {
 		// Read value of PINB7
 		buttonNow = (PINB >> 7);
-		// If the button state is 0 and the previous state was 1 then change latch state to true
 		if(buttonNow == 0 && buttonPrev == 1) {
 			clicks++;
 		}
@@ -191,6 +185,10 @@ ISR(TIMER1_COMPA_vect) {
 
 int main()
 {
+	// Setup the clockspeed
+	CLKPR  = 0x80;
+	CLKPR  = 0x00;
+	
 	init_lcd();
 	init_button();
 	

@@ -4,7 +4,8 @@
 #include <avr/interrupt.h>
 
 #include "tinythreads.h"
-mutex primesMutex = {1,0}, blinkMutex = {1,0}, buttonMutex = {1,0};
+
+mutex blinkMutex = {1,0}, buttonMutex = {1,0}, primeMutex = {1,0};
 
 void init_lcd() {
 	// LCD Enable (LCDEN) & Low Power Waveform (LCDAB)
@@ -19,6 +20,36 @@ void init_lcd() {
 	// drive time 300 microseconds (LCDDC2:0), contrast control voltage 3.35 V (LCDCC3:0)
 	LCDCCR = (0<<LCDDC2) | (0<<LCDDC1) | (0<<LCDDC0) | (1<<LCDCC3) | (1<<LCDCC2) | (1<<LCDCC1) | (1<<LCDCC0);
 
+}
+
+void init_button() {
+	PORTB = (1<<PB7);
+	// Pin Change Enable Mask (PCINT15)
+	PCMSK1 = (1<<PCINT15);
+	// External Interrupt Mask Register (EIMSK)
+	EIMSK = (1<<PCIE1);
+}
+
+void init_timer() {
+	// Timer 1 with 1024 prescaler with CTC (WGM13, WGM12)
+	TCCR1B = (0<<WGM13) | (1<<WGM12) | (1<<CS12) | (0<<CS11) | (1<<CS10);
+
+	/* 8 Mhz = 8 000 000
+	 * 8 000 000 / 1024 = 7812,5
+	 * 7812,5 = 1 second
+	 * 7812,5 / 1000 * 50 = 390,625
+	 * 391 = 50 ms
+	 * 391 = 0b110000111
+	 */
+	// Set Timer1 Output Compare A
+	TIMSK1 = (1<<OCIE1A);
+	// Set Output Compare Register 1 A to 391 in binary
+	//OCR1A = 0b110000111;
+	OCR1A = 3906; // Decimals works too!
+	//OCR1A = 7812;
+	
+	// Start the timer on value 0
+	TCNT1 = 0;
 }
 
 uint16_t digitLookUp(uint8_t c) {
@@ -138,15 +169,13 @@ void computePrimes(int pos) {
 	long n;
 
 	for(n = 1; ; n++) {
-		lock(&primesMutex);
 		if (is_prime(n)) {
 			// Lock the mutex
 			//lock(&mutexlock);
 			printAt(n, pos);
 			//yield();
 			//unlock(&mutexlock);
-		}
-		//unlock(&primesMutex);
+	}
 	}
 }
 
@@ -158,75 +187,56 @@ void blink() {
 	*/
 
 	for(;;) {
-		lock(&blinkMutex);
+		// Replace busy-wait with mutex
 		//if(readMilliseconds() >= 20) {
 			LCDDR3 = LCDDR3 ^ 0b00000001;
-			resetMilliseconds();
+			lock(&blinkMutex);
 		//}
 	}
 }
 
-void init_button() {
-	PORTB = (1<<PB7);
-}
-
 void button() {
-	bool latch = false;
-	uint8_t buttonNow = 0, buttonPrev = 0;
-	
+	uint16_t clicks = 0;
+
 	for(;;) {
-		
+		// Replace busy-wait with mutex
 		// Read value of PINB7
 		//buttonNow = (PINB >> 7);
 		// If the button state is 0 and the previous state was 1 then change latch state to true
 		//if(buttonNow == 0 && buttonPrev == 1) {
-		lock(&buttonMutex);
 		
-			if(latch == true) {
-				latch = false;
-				} else {
-				latch = true;
-			}
+			clicks++;
 		//}
-
-		// Store the new value of buttonNow in buttonPrev
-		buttonPrev = buttonNow;
-		if(latch == true) {
-			LCDDR1 = LCDDR1 ^ 0b00000010;			
-
-			LCDDR0 = 0b11111011 & LCDDR0;
-			//LCDDR1 = LCDDR1 | 0b000000010;
-			//LCDDR0 = LCDDR0 ^ 0b000000100;
-		} else {
-			LCDDR1 = 0b11111101 & LCDDR1;
-
-			LCDDR0 = LCDDR0 ^ 0b00000100;
-
-			//LCDDR1 = LCDDR1 ^ 0b000000010;
-			//LCDDR0 = LCDDR0 | 0b000000100;
+		//buttonPrev = buttonNow;
+		
+			printAt(clicks, 3);
+		lock(&buttonMutex);
 	}
-	}
+}
+
+ISR(PCINT1_vect) {
+	unlock(&buttonMutex);
 }
 
 // Yield when timer interrupts
 ISR(TIMER1_COMPA_vect) {
 	unlock(&blinkMutex);
-	yield();
 }
 
-ISR(PCINT1_vect) {
-		unlock(&buttonMutex);
-	yield();
-}
-
-int main()
-{
+int main() {
+	// Setup the clockspeed
+	CLKPR  = 0x80;
+	CLKPR  = 0x00;
 	init_lcd();
 	init_button();
+	init_timer();
 	
 	spawn(button, 0);
 	spawn(blink, 0);
 	computePrimes(0);
 	
+	while(true) {
+		
+	}
 }
 
