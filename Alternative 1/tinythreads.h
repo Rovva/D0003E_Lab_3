@@ -22,5 +22,10 @@ typedef struct mutex_block mutex;
 void lock(mutex *m);
 void unlock(mutex *m);
 
+uint8_t milliseconds;
+
+int readMilliseconds();
+void resetMilliseconds();
+
 #endif
 

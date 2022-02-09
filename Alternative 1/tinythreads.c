@@ -120,7 +120,6 @@ void spawn(void (* function)(int), int arg) {
 
 void yield(void) {
 	DISABLE();
-	milliseconds += 1;
 	// Put the current thread into the readyQ
 	enqueue(current, &readyQ);
 	// Start another thread from readyQ
@@ -154,11 +153,11 @@ void unlock(mutex *m) {
 	}
 	ENABLE();
 }
-
+// Function to reset the millisecond variable
 void resetMilliseconds() {
 	milliseconds = 0;
 }
-
+// Return the value of milliseconds
 int readMilliseconds() {
 	return milliseconds;
 }

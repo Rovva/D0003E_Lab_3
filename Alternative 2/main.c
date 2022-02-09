@@ -45,8 +45,9 @@ void init_timer() {
 	TIMSK1 = (1<<OCIE1A);
 	// Set Output Compare Register 1 A to 391 in binary
 	//OCR1A = 0b110000111;
-	OCR1A = 3906; // Decimals works too!
-	//OCR1A = 7812;
+
+	// Blink 1 Hz
+	OCR1A = 7812;
 	
 	// Start the timer on value 0
 	TCNT1 = 0;
@@ -170,22 +171,12 @@ void computePrimes(int pos) {
 
 	for(n = 1; ; n++) {
 		if (is_prime(n)) {
-			// Lock the mutex
-			//lock(&mutexlock);
 			printAt(n, pos);
-			//yield();
-			//unlock(&mutexlock);
-	}
+		}
 	}
 }
 
 void blink() {
-	/*
-		1 second = 1000 ms
-		Interrupt every 50 ms
-		1000 / 50 = 20;
-	*/
-
 	for(;;) {
 		// Replace busy-wait with mutex
 		//if(readMilliseconds() >= 20) {
@@ -204,21 +195,22 @@ void button() {
 		//buttonNow = (PINB >> 7);
 		// If the button state is 0 and the previous state was 1 then change latch state to true
 		//if(buttonNow == 0 && buttonPrev == 1) {
-		
-			clicks++;
+		lock(&buttonMutex);
+		clicks++;
 		//}
 		//buttonPrev = buttonNow;
-		
-			printAt(clicks, 3);
-		lock(&buttonMutex);
+		printAt(clicks, 3);
 	}
 }
 
+// Unlock button mutex when interrupt occurs
 ISR(PCINT1_vect) {
-	unlock(&buttonMutex);
+	if((PINB >> 7) == 0) {
+		unlock(&buttonMutex);
+	}
 }
 
-// Yield when timer interrupts
+// Unlock Blink mutex when interrupt occurs
 ISR(TIMER1_COMPA_vect) {
 	unlock(&blinkMutex);
 }
@@ -230,13 +222,12 @@ int main() {
 	init_lcd();
 	init_button();
 	init_timer();
-	
+
 	spawn(button, 0);
 	spawn(blink, 0);
 	computePrimes(0);
-	
+
 	while(true) {
-		
+
 	}
 }
-

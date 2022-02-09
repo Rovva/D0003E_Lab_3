@@ -39,7 +39,7 @@ static void initialize(void) {
 }
 
 static void enqueue(thread p, thread *queue) {
-	
+
 	thread q = *queue;
 	*queue = p;
 	p->next = q;
@@ -94,9 +94,12 @@ void spawn(void (* function)(int), int arg) {
     }
     SETSTACK(&newp->context, &newp->stack);
 	
-    enqueue(newp, &readyQ);
+    // Enqueue the current thread
+    enqueue(current, &readyQ);
+    // Start the newly created thread
+    dispatch(newp);
     //dispatch(dequeue(&readyQ));
-	
+
     ENABLE();
 }
 

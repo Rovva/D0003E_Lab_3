@@ -125,10 +125,9 @@ bool is_prime(long i) {
 }
 
 void printAt(long num, int pos) {
-	// Use the global variable pp to test mutex
 	int pp = pos;
 	writeChar( (num % 100) / 10 + '0', pp);
-	for(volatile int i = 0; i < 1000; i++) {}
+	//for(volatile int i = 0; i < 1000; i++) {}
 	pp++;
 	writeChar( num % 10 + '0', pp);
 }
@@ -180,6 +179,7 @@ void button() {
 
 // Yield when timer interrupts
 ISR(TIMER1_COMPA_vect) {
+	milliseconds += 1;
 	yield();
 }
 
