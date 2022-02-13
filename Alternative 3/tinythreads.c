@@ -98,7 +98,6 @@ void spawn(void (* function)(int), int arg) {
     enqueue(current, &readyQ);
     // Start the newly created thread
     dispatch(newp);
-    //dispatch(dequeue(&readyQ));
 
     ENABLE();
 }

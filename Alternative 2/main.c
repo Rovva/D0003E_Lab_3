@@ -5,6 +5,7 @@
 
 #include "tinythreads.h"
 
+// Create global mutex variables that is locked from the beginning
 mutex blinkMutex = {1,0}, buttonMutex = {1,0}, primeMutex = {1,0};
 
 void init_lcd() {
@@ -22,6 +23,7 @@ void init_lcd() {
 
 }
 
+// Moved the initialization of button and timer
 void init_button() {
 	PORTB = (1<<PB7);
 	// Pin Change Enable Mask (PCINT15)
@@ -191,15 +193,16 @@ void button() {
 
 	for(;;) {
 		// Replace busy-wait with mutex
+		
 		// Read value of PINB7
 		//buttonNow = (PINB >> 7);
 		// If the button state is 0 and the previous state was 1 then change latch state to true
 		//if(buttonNow == 0 && buttonPrev == 1) {
-		lock(&buttonMutex);
-		clicks++;
 		//}
 		//buttonPrev = buttonNow;
 		printAt(clicks, 3);
+		lock(&buttonMutex);
+		clicks++;
 	}
 }
 

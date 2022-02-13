@@ -5,6 +5,7 @@
 
 #include "tinythreads.h"
 
+// Global variable to keep track on how many times the joystick has interrupted
 uint16_t clicks = 0;
 
 void init_lcd() {
@@ -158,10 +159,9 @@ bool is_prime(long i) {
 }
 
 void printAt(long num, int pos) {
-	// Use the global variable pp to test mutex
 	int pp = pos;
 	writeChar( (num % 100) / 10 + '0', pp);
-	for(volatile int i = 0; i < 1000; i++) {}
+	//for(volatile int i = 0; i < 1000; i++) {}
 	pp++;
 	writeChar( num % 10 + '0', pp);
 }
@@ -185,14 +185,14 @@ void button() {
 	clicks++;
 }
 
-// Unlock button mutex when interrupt occurs
+// Spawn the thread button if joystick interrupt occured
 ISR(PCINT1_vect) {
 	if((PINB >> 7) == 0) {
 		spawn(button, 0);
 	}
 }
 
-// Unlock Blink mutex when interrupt occurs
+// Spawn blink if timer interrupts
 ISR(TIMER1_COMPA_vect) {
 	spawn(blink, 0);
 }
@@ -208,8 +208,4 @@ int main() {
 	spawn(button, 0);
 	spawn(blink, 0);
 	computePrimes(0);
-
-	while(true) {
-
-	}
 }

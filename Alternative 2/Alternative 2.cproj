@@ -12,9 +12,9 @@
     <OutputFileName>$(MSBuildProjectName)</OutputFileName>
     <OutputFileExtension>.elf</OutputFileExtension>
     <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
-    <AssemblyName>Alternative 3</AssemblyName>
-    <Name>Alternative 3</Name>
-    <RootNamespace>Alternative 3</RootNamespace>
+    <AssemblyName>Alternative 2</AssemblyName>
+    <Name>Alternative 2</Name>
+    <RootNamespace>Alternative 2</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
