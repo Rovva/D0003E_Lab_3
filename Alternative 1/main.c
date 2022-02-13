@@ -150,8 +150,10 @@ void blink() {
 	*/
 
 	for(;;) {
+		// Check if 1000 ms has occured
 		if(readMilliseconds() >= 20) {
 			LCDDR3 = LCDDR3 ^ 0b00000001;
+			// Reset the counter
 			resetMilliseconds();
 		}
 	}
@@ -179,6 +181,7 @@ void button() {
 
 // Yield when timer interrupts
 ISR(TIMER1_COMPA_vect) {
+	// Increase 50 ms count
 	milliseconds += 1;
 	yield();
 }
@@ -192,9 +195,9 @@ int main()
 	init_lcd();
 	init_button();
 	
-	spawn(computePrimes, 0);
+	spawn(button, 0);
 	spawn(blink, 0);
-	button();
+	computePrimes(0);
 	
 }
 
