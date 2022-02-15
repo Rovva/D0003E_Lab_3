@@ -557,11 +557,11 @@ int main()
 void init_button() {
 	PORTB = (1<<PB7);
  3f6:	c5 b9       	out	0x05, r28	; 5
+	CLKPR  = 0x00;
 	
 	init_lcd();
 	init_button();
 	
-	//spawn(computePrimes, 0);
 	spawn(button, 0);
  3f8:	60 e0       	ldi	r22, 0x00	; 0
  3fa:	70 e0       	ldi	r23, 0x00	; 0

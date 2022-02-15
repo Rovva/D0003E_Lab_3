@@ -27,8 +27,6 @@ thread freeQ   = threads;
 thread readyQ  = NULL;
 thread current = &initp;
 
-uint8_t milliseconds = 0;
-
 int initialized = 0;
 
 static void initialize(void) {
@@ -37,35 +35,16 @@ static void initialize(void) {
         threads[i].next = &threads[i+1];
     threads[NTHREADS-1].next = NULL;
 
-	//PORTB = (1<<PB7);
-	// Pin Change Enable Mask (PCINT15)
-	//PCMSK1 = (1<<PCINT15);
-	// External Interrupt Mask Register (EIMSK)
-	//EIMSK = (1<<PCIE1);
-	// Timer 1 with 1024 prescaler with CTC (WGM13, WGM12)
-	TCCR1B = (0<<WGM13) | (1<<WGM12) | (1<<CS12) | (0<<CS11) | (1<<CS10);
-
-	/* 8 Mhz = 8 000 000
-	 * 8 000 000 / 1024 = 7812,5
-	 * 7812,5 = 1 second
-	 * 7812,5 / 1000 * 50 = 390,625
-	 * 391 = 50 ms
-	 * 391 = 0b110000111
-	 */
-	// Set Timer1 Output Compare A
-	TIMSK1 = (1<<OCIE1A);
-	// Set Output Compare Register 1 A to 391 in binary
-	//OCR1A = 0b110000111;
-	OCR1A = 391; // Decimals works too!
-	//OCR1A = 7812;
-	
-	// Start the timer on value 0
-	TCNT1 = 0;
-
     initialized = 1;
 }
 
 static void enqueue(thread p, thread *queue) {
+
+	thread q = *queue;
+	*queue = p;
+	p->next = q;
+	
+	/* Place new threads first!
     p->next = NULL;
     if (*queue == NULL) {
         *queue = p;
@@ -75,6 +54,7 @@ static void enqueue(thread p, thread *queue) {
             q = q->next;
         q->next = p;
     }
+	*/
 }
 
 static thread dequeue(thread *queue) {
@@ -113,8 +93,12 @@ void spawn(void (* function)(int), int arg) {
         dispatch(dequeue(&readyQ));
     }
     SETSTACK(&newp->context, &newp->stack);
+	
+    // Enqueue the current thread
+    enqueue(current, &readyQ);
+    // Start the newly created thread
+    dispatch(newp);
 
-    enqueue(newp, &readyQ);
     ENABLE();
 }
 
@@ -152,17 +136,4 @@ void unlock(mutex *m) {
 		m->locked = 0;
 	}
 	ENABLE();
-}
-// Function to reset the millisecond variable
-void resetMilliseconds() {
-	DISABLE();
-	milliseconds = 0;
-	ENABLE();
-}
-// Return the value of milliseconds
-int readMilliseconds() {
-	DISABLE();
-	uint8_t temp = milliseconds;
-	ENABLE();
-	return temp;
 }

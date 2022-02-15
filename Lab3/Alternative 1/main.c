@@ -5,9 +5,6 @@
 
 #include "tinythreads.h"
 
-// Global variable to keep track on how many times the joystick has interrupted
-uint16_t clicks = 0;
-
 void init_lcd() {
 	// LCD Enable (LCDEN) & Low Power Waveform (LCDAB)
 	LCDCRA = (1<<LCDEN) | (1<<LCDAB) | (0<<LCDIF) | (0<<LCDIE) | (0<<LCDBL);
@@ -21,37 +18,6 @@ void init_lcd() {
 	// drive time 300 microseconds (LCDDC2:0), contrast control voltage 3.35 V (LCDCC3:0)
 	LCDCCR = (0<<LCDDC2) | (0<<LCDDC1) | (0<<LCDDC0) | (1<<LCDCC3) | (1<<LCDCC2) | (1<<LCDCC1) | (1<<LCDCC0);
 
-}
-
-void init_button() {
-	PORTB = (1<<PB7);
-	// Pin Change Enable Mask (PCINT15)
-	PCMSK1 = (1<<PCINT15);
-	// External Interrupt Mask Register (EIMSK)
-	EIMSK = (1<<PCIE1);
-}
-
-void init_timer() {
-	// Timer 1 with 1024 prescaler with CTC (WGM13, WGM12)
-	TCCR1B = (0<<WGM13) | (1<<WGM12) | (1<<CS12) | (0<<CS11) | (1<<CS10);
-
-	/* 8 Mhz = 8 000 000
-	 * 8 000 000 / 1024 = 7812,5
-	 * 7812,5 = 1 second
-	 * 7812,5 / 1000 * 50 = 390,625
-	 * 391 = 50 ms
-	 * 391 = 0b110000111
-	 */
-	// Set Timer1 Output Compare A
-	TIMSK1 = (1<<OCIE1A);
-	// Set Output Compare Register 1 A to 391 in binary
-	//OCR1A = 0b110000111;
-
-	// Blink 1 Hz
-	OCR1A = 7812;
-	
-	// Start the timer on value 0
-	TCNT1 = 0;
 }
 
 uint16_t digitLookUp(uint8_t c) {
@@ -177,35 +143,61 @@ void computePrimes(int pos) {
 }
 
 void blink() {
-	LCDDR3 = LCDDR3 ^ 0b00000001;
-}
+	/*
+		1 second = 1000 ms
+		Interrupt every 50 ms
+		1000 / 50 = 20;
+	*/
 
-void button() {
-	printAt(clicks, 3);
-	clicks++;
-}
-
-// Spawn the thread button if joystick interrupt occured
-ISR(PCINT1_vect) {
-	if((PINB >> 7) == 0) {
-		spawn(button, 0);
+	for(;;) {
+		// Check if 1000 ms has occured
+		if(readMilliseconds() >= 20) {
+			LCDDR3 = LCDDR3 ^ 0b00000001;
+			// Reset the counter
+			resetMilliseconds();
+		}
 	}
 }
 
-// Spawn blink if timer interrupts
-ISR(TIMER1_COMPA_vect) {
-	spawn(blink, 0);
+void init_button() {
+	PORTB = (1<<PB7);
 }
 
-int main() {
+void button() {
+	uint8_t buttonNow = 0, buttonPrev = 0;
+	uint16_t clicks = 0;
+
+	for(;;) {
+		// Read value of PINB7
+		buttonNow = (PINB >> 7);
+		if(buttonNow == 0 && buttonPrev == 1) {
+			clicks++;
+		}
+		buttonPrev = buttonNow;
+		
+		printAt(clicks, 3);
+	}
+}
+
+// Yield when timer interrupts
+ISR(TIMER1_COMPA_vect) {
+	// Increase 50 ms count
+	milliseconds += 1;
+	yield();
+}
+
+int main()
+{
 	// Setup the clockspeed
 	CLKPR  = 0x80;
 	CLKPR  = 0x00;
+	
 	init_lcd();
 	init_button();
-	init_timer();
-	sei();
-	//spawn(button, 0);
-	//spawn(blink, 0);
+	
+	spawn(button, 0);
+	spawn(blink, 0);
 	computePrimes(0);
+	
 }
+
